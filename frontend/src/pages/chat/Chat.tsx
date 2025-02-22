@@ -11,9 +11,11 @@ import DOMPurify from 'dompurify'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
-import styles from './Chat.module.css'
-import Contoso from '../../assets/AC.svg'
+import styles from './chat.module.css'
+import Contoso from '../../assets/AC.svg'; // Ensure this path is correct and the file exists
 import { XSSAllowTags } from '../../constants/sanatizeAllowables'
+
+import PromptSuggestions from "../../components/PromptSuggestions"; // Import new component
 
 import {
   ChatMessage,
@@ -58,6 +60,7 @@ const Chat = () => {
   const abortFuncs = useRef([] as AbortController[])
   const [showAuthMessage, setShowAuthMessage] = useState<boolean | undefined>()
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [selectedPrompt, setSelectedPrompt] = useState<string>(""); // 🔹 Add this line
   const [execResults, setExecResults] = useState<ExecResults[]>([])
   const [processMessages, setProcessMessages] = useState<messageStatus>(messageStatus.NotRunning)
   const [clearingChat, setClearingChat] = useState<boolean>(false)
@@ -794,6 +797,12 @@ const Chat = () => {
                 <img src={logo} className={styles.chatIcon} aria-hidden="true" />
                 <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>{ui?.chat_description}</h2>
+                
+                {/* New PromptSuggestions component */}
+                <PromptSuggestions onPromptClick={(prompt) => {
+                  console.log("Selected Prompt:", prompt); // Debugging
+                  setSelectedPrompt(prompt);
+                }} />
               </Stack>
             ) : (
               <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">
@@ -935,14 +944,13 @@ const Chat = () => {
                 clearOnSend
                 placeholder="Type a new question..."
                 disabled={isLoading}
+                selectedPrompt={selectedPrompt} // ✅ Ensure selectedPrompt is passed
                 onSend={(question, id) => {
                   appStateContext?.state.isCosmosDBAvailable?.cosmosDB
                     ? makeApiRequestWithCosmosDB(question, id)
-                    : makeApiRequestWithoutCosmosDB(question, id)
+                    : makeApiRequestWithoutCosmosDB(question, id);
                 }}
-                conversationId={
-                  appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
-                }
+                conversationId={appStateContext?.state.currentChat?.id}
               />
             </Stack>
           </div>
@@ -977,7 +985,7 @@ const Chat = () => {
               </h5>
               <div tabIndex={0}>
                 <ReactMarkdown
-                  linkTarget="_blank"
+                  components={{ a: ({ node, ...props }) => <a {...props} target="_blank" /> }}
                   className={styles.citationPanelContent}
                   children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags })}
                   remarkPlugins={[remarkGfm]}

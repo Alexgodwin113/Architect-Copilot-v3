@@ -4,7 +4,7 @@ import { Dialog, Stack, TextField } from '@fluentui/react'
 import { CopyRegular } from '@fluentui/react-icons'
 
 import { CosmosDBStatus } from '../../api'
-import Contoso from '../../assets/AC.svg'
+import Contoso from '../../assets/AC.svg' // Ensure this file exists or update the path to an existing image
 import { HistoryButton, ShareButton } from '../../components/common/Button'
 import { AppStateContext } from '../../state/AppProvider'
 
@@ -90,7 +90,7 @@ const Layout = () => {
                 text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel}
               />
             )}
-            {ui?.show_share_button && <ShareButton onClick={handleShareClick} text={shareLabel} />}
+            {ui?.show_share_button && <ShareButton onClick={handleShareClick} text={shareLabel ?? ""} />}
           </Stack>
         </Stack>
       </header>

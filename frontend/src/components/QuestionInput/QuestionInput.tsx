@@ -1,32 +1,41 @@
-import { useContext, useState } from 'react'
-import { FontIcon, Stack, TextField } from '@fluentui/react'
-import { SendRegular } from '@fluentui/react-icons'
-
-import Send from '../../assets/Send.svg'
-
-import styles from './QuestionInput.module.css'
-import { ChatMessage } from '../../api'
-import { AppStateContext } from '../../state/AppProvider'
-import { resizeImage } from '../../utils/resizeImage'
+import { useContext, useState, useEffect } from 'react';
+import { FontIcon, Stack, TextField } from '@fluentui/react';
+import { SendRegular } from '@fluentui/react-icons';
+import Send from '../../assets/Send.svg';
+import styles from './QuestionInput.module.css';
+import { ChatMessage } from '../../api';
+import { AppStateContext } from '../../state/AppProvider';
+import { resizeImage } from '../../utils/resizeImage';
 
 interface Props {
-  onSend: (question: ChatMessage['content'], id?: string) => void
-  disabled: boolean
-  placeholder?: string
-  clearOnSend?: boolean
-  conversationId?: string
+  onSend: (question: ChatMessage['content'], id?: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+  clearOnSend?: boolean;
+  conversationId?: string;
+  selectedPrompt?: string;  // ✅ Ensure this prop is passed from Chat.tsx
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
-  const [question, setQuestion] = useState<string>('')
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId, selectedPrompt }: Props) => {
+  const [question, setQuestion] = useState<string>('');
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [isPromptUsed, setIsPromptUsed] = useState<boolean>(false); // ✅ Track if prompt was clicked
 
-  const appStateContext = useContext(AppStateContext)
+  const appStateContext = useContext(AppStateContext);
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
+
+  // ✅ Ensure input updates when a prompt is clicked, but only if user hasn't typed manually
+  useEffect(() => {
+    if (selectedPrompt) {
+      console.log("Updating QuestionInput:", selectedPrompt); // Debugging
+      setQuestion(selectedPrompt);
+      setIsPromptUsed(false); // Reset manual typing flag
+    }
+  }, [selectedPrompt]);
+  
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
     if (file) {
       await convertToBase64(file);
     }
@@ -43,36 +52,33 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
 
   const sendQuestion = () => {
     if (disabled || !question.trim()) {
-      return
+      return;
     }
 
-    const questionTest: ChatMessage["content"] = base64Image ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }] : question.toString();
+    const questionContent: ChatMessage["content"] = base64Image
+      ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }]
+      : question.toString();
 
-    if (conversationId && questionTest !== undefined) {
-      onSend(questionTest, conversationId)
-      setBase64Image(null)
-    } else {
-      onSend(questionTest)
-      setBase64Image(null)
-    }
+    onSend(questionContent, conversationId);
+    setBase64Image(null);
 
     if (clearOnSend) {
-      setQuestion('')
+      setQuestion('');
+      setIsPromptUsed(false); // ✅ Reset prompt usage after sending
     }
-  }
+  };
 
   const onEnterPress = (ev: React.KeyboardEvent<Element>) => {
     if (ev.key === 'Enter' && !ev.shiftKey && !(ev.nativeEvent?.isComposing === true)) {
-      ev.preventDefault()
-      sendQuestion()
+      ev.preventDefault();
+      sendQuestion();
     }
-  }
+  };
 
   const onQuestionChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-    setQuestion(newValue || '')
-  }
-
-  const sendQuestionDisabled = disabled || !question.trim()
+    setQuestion(newValue || '');
+    setIsPromptUsed(true); // ✅ Mark that the user is manually typing
+  };
 
   return (
     <Stack horizontal className={styles.questionInputContainer}>
@@ -91,7 +97,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
           <input
             type="file"
             id="fileInput"
-            onChange={(event) => handleImageUpload(event)}
+            onChange={handleImageUpload}
             accept="image/*"
             className={styles.fileInput}
           />
@@ -102,7 +108,8 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
               aria-label='Upload Image'
             />
           </label>
-        </div>)}
+        </div>
+      )}
       {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
       <div
         className={styles.questionInputSendButtonContainer}
@@ -110,8 +117,9 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         tabIndex={0}
         aria-label="Ask question button"
         onClick={sendQuestion}
-        onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? sendQuestion() : null)}>
-        {sendQuestionDisabled ? (
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? sendQuestion() : null)}
+      >
+        {disabled || !question.trim() ? (
           <SendRegular className={styles.questionInputSendButtonDisabled} />
         ) : (
           <img src={Send} className={styles.questionInputSendButton} alt="Send Button" />
@@ -119,5 +127,5 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       </div>
       <div className={styles.questionInputBottomBorder} />
     </Stack>
-  )
-}
+  );
+};
