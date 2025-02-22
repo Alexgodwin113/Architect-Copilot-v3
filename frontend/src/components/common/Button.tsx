@@ -1,30 +1,33 @@
-import { CommandBarButton, DefaultButton, IButtonProps } from '@fluentui/react'
+import { CommandBarButton, DefaultButton, IButtonProps } from '@fluentui/react';
+import styles from './Button.module.css';
+import { Share20Regular, History20Regular } from '@fluentui/react-icons';
 
-import styles from './Button.module.css'
 
 interface ButtonProps extends IButtonProps {
-  onClick: () => void
-  text: string | undefined
+  onClick: () => void;
+  text: string;
 }
 
 export const ShareButton: React.FC<ButtonProps> = ({ onClick, text }) => {
   return (
     <CommandBarButton
       className={styles.shareButtonRoot}
-      iconProps={{ iconName: 'Share' }}
       onClick={onClick}
-      text={text}
-    />
-  )
-}
+    >
+      <Share20Regular className={styles.icon} /> 
+      <span>{text}</span>
+    </CommandBarButton>
+  );
+};
 
 export const HistoryButton: React.FC<ButtonProps> = ({ onClick, text }) => {
   return (
     <DefaultButton
       className={styles.historyButtonRoot}
-      text={text}
-      iconProps={{ iconName: 'History' }}
       onClick={onClick}
-    />
-  )
-}
+    >
+      <History20Regular className={styles.icon} /> 
+      <span>{text}</span>
+    </DefaultButton>
+  );
+};
